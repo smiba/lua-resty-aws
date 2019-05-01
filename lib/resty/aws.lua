@@ -11,38 +11,6 @@ local error = error
 local _M = { _VERSION = '0.1.0' }
 local mt = { __index = _M }
 
-local function get_credentials ()
-  local access_key = os.getenv('AWS_ACCESS_KEY_ID')
-  local secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
-  if access_key ~= nil and secret_key ~= nil then
-    return {
-      access_key = access_key,
-      secret_key = secret_key
-    }
-  end
-
-  local res = ngx.location.capture('/_meta-data/iam/security-credentials/')
-  if res.status ~= ngx.HTTP_OK then
-    return
-  end
-
-  res = ngx.location.capture('/_meta-data/iam/security-credentials/' .. res.body)
-  if res.status ~= ngx.HTTP_OK then
-    return
-  end
-
-  local creds = cjson.decode(res.body)
-  if creds['Type'] ~= 'AWS-HMAC' or creds['Code'] ~= 'Success' then
-    return
-  end
-
-  return {
-    access_key = creds['AccessKeyId'],
-    secret_key = creds['SecretAccessKey'],
-    security_token = creds['Token']
-  }
-end
-
 local function get_iso8601_basic(timestamp)
   return os.date('!%Y%m%dT%H%M%SZ', timestamp)
 end
@@ -129,8 +97,11 @@ local function get_service_and_region(host)
   return nil, nil
 end
 
-local function aws_set_headers(host, uri)
-  local creds = get_credentials()
+local function aws_set_headers(access_key, secret_key, host, uri)
+  local creds = {
+      access_key = access_key,
+      secret_key = secret_key
+    }
   local timestamp = tonumber(ngx.time())
   local service, region = get_service_and_region(host)
   local auth = get_authorization(creds, timestamp, region, service, host, uri)
@@ -143,8 +114,8 @@ local function aws_set_headers(host, uri)
   end
 end
 
-local function s3_set_headers(host, uri)
-  aws_set_headers(host, uri)
+local function s3_set_headers(access_key, secret_key, host, uri)
+  aws_set_headers(access_key, secret_key, host, uri)
   ngx.req.set_header('x-amz-content-sha256', get_sha256_digest(ngx.var.request_body))
 end
 
