@@ -14,7 +14,7 @@ nearly all AWS services.
 location / {
     set $s3_host s3.amazonaws.com;
     set $s3_uri $request_uri;
-    access_by_lua "local aws = require 'resty.aws'; aws.s3_set_headers(ngx.var.s3_host, ngx.var.s3_uri)";
+    access_by_lua "local aws = require 'resty.aws'; aws.s3_set_headers(ngx.var.access_key, ngx.var.secret_key, ngx.var.s3_host, ngx.var.s3_uri)";
     proxy_pass https://$s3_host$s3_uri;
 }
 ```
