@@ -90,6 +90,7 @@ local function get_service_and_region(host)
   local patterns = {
     {'s3.amazonaws.com', 's3', 'us-east-1'},
     {'s3-external-1.amazonaws.com', 's3', 'us-east-1'},
+    {'s3%.([a-z0-9-]+)%.amazonaws%.com', 's3', nil},
     {'s3%-([a-z0-9-]+)%.amazonaws%.com', 's3', nil}
   }
 
