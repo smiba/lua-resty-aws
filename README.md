@@ -11,9 +11,14 @@ nearly all AWS services.
 ## Example
 
 ```nginx
+
+map $request_uri $request_uri_no_parameters {
+    "~^(?P<path>.*?)(\?.*)*$"  $path;
+}
+
 location / {
     set $s3_host s3.amazonaws.com;
-    set $s3_uri $request_uri;
+    set $s3_uri $request_uri_no_parameters;
     access_by_lua "local aws = require 'resty.aws'; aws.s3_set_headers(ngx.var.access_key, ngx.var.secret_key, ngx.var.s3_host, ngx.var.s3_uri)";
     proxy_pass https://$s3_host$s3_uri;
 }
