@@ -49,6 +49,24 @@ local function get_sha256_digest(s)
   return str.to_hex(h:final())
 end
 
+local function get_canonical_query_string()
+  local args = ngx.req.get_uri_args()
+  local query_string = ''
+  for key, val in pairs(args) do
+    if query_string ~= '' then
+      query_string = query_string .. '&'
+    end
+
+    if type(val) == "table" then
+      query_string = query_string .. key .. '=' .. val[0] --Get the first instance of said argument, ignore the others. (Note: Maybe we should just include all instances of said parameter?)
+    else
+      query_string = query_string .. key .. '=' .. val
+    end
+  end
+
+  return query_string
+end
+
 local function get_hashed_canonical_request(timestamp, host, uri, unsigned)
   local digest
   if unsigned ~= nil then
@@ -58,7 +76,7 @@ local function get_hashed_canonical_request(timestamp, host, uri, unsigned)
   end
   local canonical_request = ngx.var.request_method .. '\n'
     .. uri .. '\n'
-    .. '\n'
+    .. get_canonical_query_string() .. '\n'
     .. 'host:' .. host .. '\n'
     .. 'x-amz-content-sha256:' .. digest .. '\n'
     .. 'x-amz-date:' .. get_iso8601_basic(timestamp) .. '\n'
