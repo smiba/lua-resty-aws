@@ -69,12 +69,13 @@ end
 
 local function get_hashed_canonical_request(timestamp, host, uri)
   local digest
-  if ngx.var.request_body == nil then
+  if ngx.var.request_body == nil and ngx.var.request_method == 'PUT' then
     digest = 'UNSIGNED-PAYLOAD'
   else
     digest = get_sha256_digest(ngx.var.request_body)
   end
-  local canonical_request = ngx.var.request_method .. '\n' 
+  local canonical_request = 
+    ngx.var.request_method .. '\n' 
     .. uri .. '\n' 
     .. get_canonical_query_string() .. '\n' 
     .. 'host:' .. host .. '\n' 
@@ -147,7 +148,7 @@ end
 
 function _M.s3_set_headers(access_key, secret_key, host, uri, region, service)
   _M.aws_set_headers(access_key, secret_key, host, uri, region, service)
-  if ngx.var.request_body == nil then
+  if ngx.var.request_body == nil and ngx.var.request_method == 'PUT' then
     ngx.req.set_header('x-amz-content-sha256', 'UNSIGNED-PAYLOAD')
   else
     ngx.req.set_header('x-amz-content-sha256', get_sha256_digest(ngx.var.request_body))
