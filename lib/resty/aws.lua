@@ -49,8 +49,13 @@ local function get_sha256_digest(s)
   return str.to_hex(h:final())
 end
 
-local function get_hashed_canonical_request(timestamp, host, uri)
-  local digest = get_sha256_digest(ngx.var.request_body)
+local function get_hashed_canonical_request(timestamp, host, uri, unsigned)
+  local digest
+  if unsigned ~= nil then
+    digest = 'UNSIGNED-PAYLOAD'
+  else
+    digest = get_sha256_digest(ngx.var.request_body)
+  end
   local canonical_request = ngx.var.request_method .. '\n'
     .. uri .. '\n'
     .. '\n'
@@ -63,11 +68,11 @@ local function get_hashed_canonical_request(timestamp, host, uri)
   return get_sha256_digest(canonical_request)
 end
 
-local function get_string_to_sign(timestamp, region, service, host, uri)
+local function get_string_to_sign(timestamp, region, service, host, uri, unsigned)
   return 'AWS4-HMAC-SHA256\n'
     .. get_iso8601_basic(timestamp) .. '\n'
     .. get_cred_scope(timestamp, region, service) .. '\n'
-    .. get_hashed_canonical_request(timestamp, host, uri)
+    .. get_hashed_canonical_request(timestamp, host, uri, unsigned)
 end
 
 local function get_signature(derived_signing_key, string_to_sign)
@@ -76,9 +81,9 @@ local function get_signature(derived_signing_key, string_to_sign)
   return h:final(nil, true)
 end
 
-local function get_authorization(keys, timestamp, region, service, host, uri)
+local function get_authorization(keys, timestamp, region, service, host, uri, unsigned)
   local derived_signing_key = get_derived_signing_key(keys, timestamp, region, service)
-  local string_to_sign = get_string_to_sign(timestamp, region, service, host, uri)
+  local string_to_sign = get_string_to_sign(timestamp, region, service, host, uri, unsigned)
   local auth = 'AWS4-HMAC-SHA256 '
     .. 'Credential=' .. keys['access_key'] .. '/' .. get_cred_scope(timestamp, region, service)
     .. ', SignedHeaders=' .. get_signed_headers()
@@ -106,7 +111,7 @@ local function get_service_and_region(host)
   return nil, nil
 end
 
-function _M.aws_set_headers(access_key, secret_key, host, uri, region, service)
+function _M.aws_set_headers(access_key, secret_key, host, uri, region, service, unsigned)
   local creds = {
     access_key = access_key,
     secret_key = secret_key
@@ -115,16 +120,20 @@ function _M.aws_set_headers(access_key, secret_key, host, uri, region, service)
   if region == nil or service == nil then
     service, region = get_service_and_region(host)
   end
-  local auth = get_authorization(creds, timestamp, region, service, host, uri)
+  local auth = get_authorization(creds, timestamp, region, service, host, uri, unsigned)
 
   ngx.req.set_header('Authorization', auth)
   ngx.req.set_header('Host', host)
   ngx.req.set_header('x-amz-date', get_iso8601_basic(timestamp))
 end
 
-function _M.s3_set_headers(access_key, secret_key, host, uri, region, service)
-  _M.aws_set_headers(access_key, secret_key, host, uri, region service)
-  ngx.req.set_header('x-amz-content-sha256', get_sha256_digest(ngx.var.request_body))
+function _M.s3_set_headers(access_key, secret_key, host, uri, region, service, unsigned)
+  _M.aws_set_headers(access_key, secret_key, host, uri, region service, unsigned)
+  if (unsigned ~= nil) then
+    ngx.req.set_header('x-amz-content-sha256', 'UNSIGNED-PAYLOAD')
+  else
+    ngx.req.set_header('x-amz-content-sha256', get_sha256_digest(ngx.var.request_body))
+  end
 end
 
 return _M
