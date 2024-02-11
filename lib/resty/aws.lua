@@ -4,7 +4,7 @@ local resty_hmac = require('resty.hmac')
 local resty_sha256 = require('resty.sha256')
 local str = require('resty.string')
 
-local _M = { _VERSION = '0.1.2' }
+local _M = { _VERSION = '0.1.3' }
 
 local function get_iso8601_basic(timestamp)
   return os.date('!%Y%m%dT%H%M%SZ', timestamp)
@@ -17,15 +17,15 @@ end
 local function get_derived_signing_key(keys, timestamp, region, service)
   local h_date = resty_hmac:new('AWS4' .. keys['secret_key'], resty_hmac.ALGOS.SHA256)
   h_date:update(get_iso8601_basic_short(timestamp))
-  k_date = h_date:final()
+  local k_date = h_date:final()
 
   local h_region = resty_hmac:new(k_date, resty_hmac.ALGOS.SHA256)
   h_region:update(region)
-  k_region = h_region:final()
+  local k_region = h_region:final()
 
   local h_service = resty_hmac:new(k_region, resty_hmac.ALGOS.SHA256)
   h_service:update(service)
-  k_service = h_service:final()
+  local k_service = h_service:final()
 
   local h = resty_hmac:new(k_service, resty_hmac.ALGOS.SHA256)
   h:update('aws4_request')
