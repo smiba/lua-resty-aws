@@ -128,7 +128,7 @@ function _M.aws_set_headers(access_key, secret_key, host, uri, region, service, 
 end
 
 function _M.s3_set_headers(access_key, secret_key, host, uri, region, service, unsigned)
-  _M.aws_set_headers(access_key, secret_key, host, uri, region service, unsigned)
+  _M.aws_set_headers(access_key, secret_key, host, uri, region, service, unsigned)
   if (unsigned ~= nil) then
     ngx.req.set_header('x-amz-content-sha256', 'UNSIGNED-PAYLOAD')
   else
