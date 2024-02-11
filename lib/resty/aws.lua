@@ -54,13 +54,13 @@ local function get_canonical_query_string()
   local query_string = ''
   for key, val in pairs(args) do
     if query_string ~= '' then
-      query_string = query_string .. '&'
+      query_string = '&' .. query_string
     end
 
     if type(val) == "table" then
-      query_string = query_string .. key .. '=' .. val[0] --Get the first instance of said argument, ignore the others. (Note: Maybe we should just include all instances of said parameter?)
+      query_string = ngx.escape_uri(key) .. '=' .. ngx.escape_uri(val[0]) .. query_string --Get the first instance of said argument, ignore the others. (Note: Maybe we should just include all instances of said parameter?)
     else
-      query_string = query_string .. key .. '=' .. val
+      query_string = ngx.escape_uri(key) .. '=' .. ngx.escape_uri(val) .. query_string
     end
   end
 
