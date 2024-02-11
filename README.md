@@ -12,6 +12,11 @@ nearly all AWS services.
 
 ```nginx
 
+#You're limited by your max_body_size (and memory it may take up)
+client_max_body_size 1G;
+client_body_buffer_size 1024M;
+client_body_in_single_buffer on;
+
 map $request_uri $request_uri_no_parameters {
     "~^(?P<path>.*?)(\?.*)*$"  $path;
 }
