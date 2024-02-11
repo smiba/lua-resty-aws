@@ -106,13 +106,15 @@ local function get_service_and_region(host)
   return nil, nil
 end
 
-function _M.aws_set_headers(access_key, secret_key, host, uri)
+function _M.aws_set_headers(access_key, secret_key, host, uri, region, service)
   local creds = {
     access_key = access_key,
     secret_key = secret_key
   }
   local timestamp = tonumber(ngx.time())
-  local service, region = get_service_and_region(host)
+  if region == nil or service == nil then
+    service, region = get_service_and_region(host)
+  end
   local auth = get_authorization(creds, timestamp, region, service, host, uri)
 
   ngx.req.set_header('Authorization', auth)
@@ -120,8 +122,8 @@ function _M.aws_set_headers(access_key, secret_key, host, uri)
   ngx.req.set_header('x-amz-date', get_iso8601_basic(timestamp))
 end
 
-function _M.s3_set_headers(access_key, secret_key, host, uri)
-  _M.aws_set_headers(access_key, secret_key, host, uri)
+function _M.s3_set_headers(access_key, secret_key, host, uri, region, service)
+  _M.aws_set_headers(access_key, secret_key, host, uri, region service)
   ngx.req.set_header('x-amz-content-sha256', get_sha256_digest(ngx.var.request_body))
 end
 
