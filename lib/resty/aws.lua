@@ -60,7 +60,11 @@ local function get_canonical_query_string()
     if type(val) == "table" then
       query_string = ngx.escape_uri(key) .. '=' .. ngx.escape_uri(val[0]) .. query_string --Get the first instance of said argument, ignore the others. (Note: Maybe we should just include all instances of said parameter?)
     else
-      query_string = ngx.escape_uri(key) .. '=' .. ngx.escape_uri(val) .. query_string
+      if val == true then
+        query_string = ngx.escape_uri(key) .. '=' .. query_string
+      else
+        query_string = ngx.escape_uri(key) .. '=' .. ngx.escape_uri(val) .. query_string
+      end
     end
   end
 
